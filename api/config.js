@@ -1,4 +1,6 @@
-// پیکربندی Firebase Realtime Database
+// api/config.js
+
+// تنظیمات فایربیس
 const firebaseConfig = {
   apiKey: "AIzaSyCd_Ct5YY_3XiOjiunPGXNIro41EO3UfPM",
   authDomain: "proforosh.firebaseapp.com",
@@ -9,16 +11,10 @@ const firebaseConfig = {
   appId: "1:646604737860:web:5eaede6fa3c894b669db11"
 };
 
-// مقداردهی اولیه امن فایربیس
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-}
-const db = firebase.database();
-
-// کلید API مربوط به ImgBB
+// کلید ImgBB
 const IMGBB_API_KEY = "32b44cf4a92e03d876d7d02104feabfb";
 
-// تابع آپلود عکس به ImgBB
+// تابع آپلود عکس در ImgBB
 async function uploadToImgBB(file) {
   const formData = new FormData();
   formData.append("image", file);
@@ -28,16 +24,15 @@ async function uploadToImgBB(file) {
       method: "POST",
       body: formData
     });
-
     const data = await response.json();
-    if (data && data.success) {
+    if (data.success) {
       return data.data.url;
     } else {
-      throw new Error(data.error ? data.error.message : "خطا در آپلود تصویر");
+      throw new Error("خطا در آپلود تصویر");
     }
   } catch (error) {
     console.error("ImgBB Upload Error:", error);
-    alert("خطا در آپلود عکس به ImgBB: " + error.message);
+    alert("خطا در آپلود عکس. لطفاً مجدداً تلاش کنید.");
     return null;
   }
 }
