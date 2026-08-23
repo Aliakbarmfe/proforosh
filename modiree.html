@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>پنل مدیریت</title>
+  <title>خریدو فروش گپ و چنل و اکانت فری  فایر اسپارو</title>
 
   <!-- فایل تنظیمات اصلی -->
   <script src="./config.js"></script>
@@ -31,6 +31,11 @@
       position: sticky;
       top: 0;
       z-index: 100;
+    }
+    .header-title {
+      font-size: 14px;
+      font-weight: bold;
+      color: var(--text);
     }
     .top-btn {
       padding: 6px 12px; border: none; border-radius: 6px;
@@ -114,6 +119,7 @@
   <!-- هدر مدیر -->
   <header>
     <button class="top-btn logout-btn" onclick="handleAdminLogout()">خروج</button>
+    <span class="header-title">خریدو فروش گپ و چنل و اکانت فری  فایر اسپارو</span>
     <button class="top-btn info-btn" onclick="openModal('adminInfoModal')">اطلاعات مدیر</button>
     <button class="top-btn add-btn" onclick="openAddProductModal()">+</button>
   </header>
