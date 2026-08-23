@@ -5,12 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>پشتیبانی</title>
 
-  <!-- SDK فایربیس -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-
-  <!-- پیکربندی مشترک -->
-  <script src="./api/config.js"></script>
+  <!-- فایل تنظیمات اصلی -->
+  <script src="./config.js"></script>
 
   <style>
     :root {
@@ -107,7 +103,7 @@
 
   <!-- محیط چت -->
   <div class="chat-container">
-    <div class="messages-list" id="messagesList"></div>
+    <div class="messages-list" id="messagesList">در حال بارگذاری پیام‌ها...</div>
 
     <div class="input-area">
       <textarea id="msgText" placeholder="پیام خود را بنویسید..."></textarea>
@@ -119,59 +115,64 @@
   </div>
 
   <script>
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
     let currentUser = JSON.parse(localStorage.getItem('user')) || null;
 
     window.onload = function() {
-      // بررسی ورود کاربر
       if (!currentUser) {
         alert("لطفاً ابتدا ثبت‌نام کنید یا وارد شوید.");
         window.location.href = 'index.html';
         return;
       }
 
-      // چک کردن جهت ارسال رسید
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('ref') === 'receipt') {
         document.getElementById('msgText').value = "سلام، رسید پرداخت خدمت شما ارسال شد:";
       }
 
       loadMessages();
+      // بروزرسانی خودکار پیام‌ها هر ۳ ثانیه یک‌بار
+      setInterval(loadMessages, 3000);
     };
 
-    // بارگذاری پیام‌های گفتگو
-    function loadMessages() {
-      db.ref('messages').on('value', snapshot => {
-        const list = document.getElementById('messagesList');
-        list.innerHTML = "";
+    // بارگذاری پیام‌ها از طریق API Vercel
+    async function loadMessages() {
+      const messagesData = await DB.get('messages');
+      const list = document.getElementById('messagesList');
+      
+      if (!messagesData) {
+        list.innerHTML = "<p style='text-align:center;'>هنوز پیامی ارسال نشده است.</p>";
+        return;
+      }
 
-        snapshot.forEach(child => {
-          const m = child.val();
-          // فقط پیام‌های مربوط به همین کاربر یا پاسخ‌های مدیر به این کاربر
-          if (m.sender === currentUser.username || m.receiver === currentUser.username) {
-            const isMe = m.sender === currentUser.username;
-            const bubble = document.createElement('div');
-            bubble.className = `msg-bubble ${isMe ? 'user-msg' : 'admin-msg'}`;
+      const isScrolledToBottom = list.scrollHeight - list.clientHeight <= list.scrollTop + 50;
 
-            let htmlContent = `<b>${isMe ? 'شما' : 'مدیر'}:</b><br>${m.text || ''}`;
-            
-            if (m.imgUrl) {
-              htmlContent += `
-                <br>
-                <img src="${m.imgUrl}" class="msg-img">
-                <a href="${m.imgUrl}" target="_blank" download class="dl-btn">دانلود عکس ⬇</a>
-              `;
-            }
+      list.innerHTML = "";
 
-            bubble.innerHTML = htmlContent;
-            list.appendChild(bubble);
+      Object.keys(messagesData).forEach(key => {
+        const m = messagesData[key];
+        if (m.sender === currentUser.username || m.receiver === currentUser.username) {
+          const isMe = m.sender === currentUser.username;
+          const bubble = document.createElement('div');
+          bubble.className = `msg-bubble ${isMe ? 'user-msg' : 'admin-msg'}`;
+
+          let htmlContent = `<b>${isMe ? 'شما' : 'مدیر'}:</b><br>${m.text || ''}`;
+          
+          if (m.imgUrl) {
+            htmlContent += `
+              <br>
+              <img src="${m.imgUrl}" class="msg-img">
+              <a href="${m.imgUrl}" target="_blank" download class="dl-btn">دانلود عکس ⬇</a>
+            `;
           }
-        });
 
-        list.scrollTop = list.scrollHeight;
+          bubble.innerHTML = htmlContent;
+          list.appendChild(bubble);
+        }
       });
+
+      if (isScrolledToBottom) {
+        list.scrollTop = list.scrollHeight;
+      }
     }
 
     // ارسال پیام جدید به مدیر
@@ -193,27 +194,33 @@
           imgUrl = await uploadToImgBB(imgFile);
         }
 
-        db.ref('messages').push({
+        const msgData = {
           sender: currentUser.username,
           receiver: 'admin',
           text: text,
-          imgUrl: imgUrl,
+          imgUrl: imgUrl || "",
           date: Date.now()
-        }, err => {
-          sendBtn.innerText = "ارسال";
-          sendBtn.disabled = false;
-          if (!err) {
-            document.getElementById('msgText').value = "";
-            document.getElementById('msgImg').value = "";
-          } else {
-            alert("خطا در ارسال پیام.");
-          }
-        });
+        };
+
+        const result = await DB.push('messages', msgData);
+
+        sendBtn.innerText = "ارسال";
+        sendBtn.disabled = false;
+
+        if (result) {
+          document.getElementById('msgText').value = "";
+          document.getElementById('msgImg').value = "";
+          await loadMessages();
+          const list = document.getElementById('messagesList');
+          list.scrollTop = list.scrollHeight;
+        } else {
+          alert("خطا در ارسال پیام.");
+        }
 
       } catch (e) {
         sendBtn.innerText = "ارسال";
         sendBtn.disabled = false;
-        alert("خطا در اپلود عکس یا ارسال پیام.");
+        alert("خطا در آپلود عکس یا ارسال پیام.");
       }
     }
   </script>
