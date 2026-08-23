@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>خدمات همه کاره</title>
   
-  <!-- SDK فایربیس نسخه ماژولار -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <!-- کتابخانه‌های فایربیس v8 (کاملاً پایدار برای موبایل) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-  <!-- پیکربندی مشترک -->
+  <!-- پیکربندی کلیدها -->
   <script src="./api/config.js"></script>
 
   <style>
@@ -22,7 +22,6 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: Tahoma, sans-serif; }
     body { background-color: var(--bg-color); color: var(--text); padding-bottom: 30px; }
     
-    /* هدر */
     header {
       background-color: var(--card-bg);
       display: flex;
@@ -34,12 +33,11 @@
       top: 0;
       z-index: 100;
     }
-    .header-title { font-weight: bold; font-size: 16px; }
+    .header-title { font-weight: bold; font-size: 15px; }
     .header-left, .header-right { display: flex; align-items: center; gap: 8px; }
     
-    /* دکمه‌ها و دایره‌ها */
     .icon-btn {
-      width: 42px; height: 42px; border-radius: 50%;
+      width: 44px; height: 44px; border-radius: 50%;
       background: var(--primary); color: #fff;
       display: flex; justify-content: center; align-items: center;
       cursor: pointer; font-size: 11px; text-align: center;
@@ -50,9 +48,8 @@
       background: #e0e0e0; border: none; padding: 3px 8px;
       border-radius: 10px; font-size: 11px; cursor: pointer;
     }
-    .dots-btn { font-size: 20px; background: transparent; color: #333; border: none; cursor: pointer; padding: 5px; }
+    .dots-btn { font-size: 22px; background: transparent; color: #333; border: none; cursor: pointer; padding: 5px; }
 
-    /* شبکه‌بندی محصولات (۲ تایی) */
     .products-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -79,7 +76,6 @@
     .product-title { font-size: 13px; font-weight: bold; margin-bottom: 5px; }
     .product-price { font-size: 12px; color: #27ae60; font-weight: bold; }
 
-    /* پاپ‌آپ‌ها */
     .modal {
       display: none; position: fixed; top: 0; left: 0;
       width: 100%; height: 100%; background: rgba(0,0,0,0.5);
@@ -93,19 +89,16 @@
     }
     .modal-content h3 { margin-bottom: 15px; font-size: 15px; }
     .modal-content input {
-      width: 100%; padding: 8px; margin: 6px 0;
+      width: 100%; padding: 10px; margin: 6px 0;
       border: 1px solid #ccc; border-radius: 6px; font-size: 13px;
     }
     .modal-btn {
-      width: 100%; padding: 9px; margin-top: 8px;
+      width: 100%; padding: 10px; margin-top: 8px;
       background: var(--primary); color: #fff; border: none;
       border-radius: 6px; cursor: pointer; font-weight: bold;
     }
-    .close-btn {
-      background: #e74c3c; margin-top: 5px;
-    }
+    .close-btn { background: #e74c3c; margin-top: 5px; }
     
-    /* اسلایدر عکس‌های اضافی */
     .slider-container {
       display: flex; overflow-x: auto; gap: 8px;
       margin: 10px 0; padding-bottom: 5px;
@@ -114,7 +107,6 @@
       width: 80px; height: 80px; border-radius: 6px; object-fit: cover; flex-shrink: 0;
     }
     
-    /* لیست اعلانات */
     .notif-item {
       background: #f8f9fa; border-right: 3px solid var(--primary);
       padding: 8px; margin: 6px 0; text-align: right; font-size: 12px;
@@ -124,7 +116,6 @@
 </head>
 <body>
 
-  <!-- هدر سایت -->
   <header>
     <div class="header-right">
       <button class="dots-btn" onclick="openModal('adminAuthModal')">⋮</button>
@@ -141,10 +132,9 @@
     </div>
   </header>
 
-  <!-- لیست محصولات -->
   <div class="products-grid" id="productsGrid"></div>
 
-  <!-- پاپ‌آپ انتخابی ورود / ثبت نام -->
+  <!-- پاپ‌آپ‌ها -->
   <div class="modal" id="authChoiceModal">
     <div class="modal-content">
       <h3>ورود یا ثبت نام</h3>
@@ -154,7 +144,6 @@
     </div>
   </div>
 
-  <!-- پاپ‌آپ ثبت نام -->
   <div class="modal" id="registerModal">
     <div class="modal-content">
       <h3>ثبت نام جدید</h3>
@@ -166,7 +155,6 @@
     </div>
   </div>
 
-  <!-- پاپ‌آپ ورود -->
   <div class="modal" id="loginModal">
     <div class="modal-content">
       <h3>ورود به حساب</h3>
@@ -177,17 +165,15 @@
     </div>
   </div>
 
-  <!-- پاپ‌آپ اطلاعات کاربر / خروج -->
   <div class="modal" id="userInfoModal">
     <div class="modal-content">
       <h3>اطلاعات حساب</h3>
-      <p id="userInfoText" style="margin: 10px 0; font-size: 13px;"></p>
+      <p id="userInfoText" style="margin: 10px 0; font-size: 13px; line-height: 1.6;"></p>
       <button class="modal-btn close-btn" onclick="handleLogout()">خروج از حساب</button>
       <button class="modal-btn" style="background:#7f8c8d;" onclick="closeModal('userInfoModal')">انصراف</button>
     </div>
   </div>
 
-  <!-- پاپ‌آپ ورود مدیر -->
   <div class="modal" id="adminAuthModal">
     <div class="modal-content">
       <h3>ورود مدیریت</h3>
@@ -198,7 +184,6 @@
     </div>
   </div>
 
-  <!-- پاپ‌آپ اعلانات -->
   <div class="modal" id="notifModal">
     <div class="modal-content">
       <h3>اعلانات شما</h3>
@@ -207,7 +192,6 @@
     </div>
   </div>
 
-  <!-- پاپ‌آپ جزئیات محصول -->
   <div class="modal" id="productDetailsModal">
     <div class="modal-content">
       <h3 id="pDetailsTitle"></h3>
@@ -222,7 +206,6 @@
     </div>
   </div>
 
-  <!-- پاپ‌آپ اطلاعات پرداخت/خرید -->
   <div class="modal" id="buyModal">
     <div class="modal-content">
       <h3>اطلاعات پرداخت</h3>
@@ -237,17 +220,23 @@
   </div>
 
   <script>
-    // مقداردهی اولیه فایربیس
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    // راه‌اندازی ایمن فایربیس
+    let db;
+    try {
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+      db = firebase.database();
+    } catch(e) {
+      console.error("Firebase Init Error:", e);
+    }
 
     let currentUser = JSON.parse(localStorage.getItem('user')) || null;
     let selectedProduct = null;
 
-    // بارگذاری اولیه
     window.onload = function() {
       updateUserUI();
-      loadProducts();
+      if(db) loadProducts();
       preventBackOnSession();
     };
 
@@ -256,8 +245,15 @@
       window.onpopstate = function () { history.go(1); };
     }
 
-    function openModal(id) { document.getElementById(id).classList.add('active'); }
-    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+    function openModal(id) { 
+      const modal = document.getElementById(id);
+      if(modal) modal.classList.add('active'); 
+    }
+    
+    function closeModal(id) { 
+      const modal = document.getElementById(id);
+      if(modal) modal.classList.remove('active'); 
+    }
 
     function updateUserUI() {
       const circle = document.getElementById('userCircle');
@@ -277,7 +273,6 @@
       }
     }
 
-    // ثبت نام
     function handleRegister() {
       const name = document.getElementById('regName').value.trim();
       const username = document.getElementById('regUser').value.trim();
@@ -305,7 +300,6 @@
       });
     }
 
-    // ورود
     function handleLogin() {
       const username = document.getElementById('loginUser').value.trim();
       const password = document.getElementById('loginPass').value.trim();
@@ -323,7 +317,6 @@
       });
     }
 
-    // خروج
     function handleLogout() {
       currentUser = null;
       localStorage.removeItem('user');
@@ -331,7 +324,6 @@
       closeModal('userInfoModal');
     }
 
-    // ورود مدیر
     function handleAdminLogin() {
       const u = document.getElementById('adminUser').value.trim();
       const p = document.getElementById('adminPass').value.trim();
@@ -347,7 +339,6 @@
       });
     }
 
-    // نمایش اعلانات
     function openNotifs() {
       if (!currentUser) {
         alert("لطفاً ابتدا ثبت‌نام کنید یا وارد شوید.");
@@ -358,7 +349,6 @@
       list.innerHTML = "در حال دریافت...";
       openModal('notifModal');
 
-      // دریافت عمومی و شخصی
       db.ref('notifications').once('value', snapshot => {
         list.innerHTML = "";
         snapshot.forEach(child => {
@@ -374,7 +364,6 @@
       });
     }
 
-    // صفحه پشتیبانی
     function goToSupport() {
       if (!currentUser) {
         alert("لطفاً ابتدا ثبت‌نام کنید یا وارد شوید.");
@@ -388,7 +377,6 @@
       window.location.href = 'posht.html?ref=receipt';
     }
 
-    // بارگذاری لیست محصولات
     function loadProducts() {
       db.ref('products').on('value', snapshot => {
         const grid = document.getElementById('productsGrid');
