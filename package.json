@@ -1,7 +1,7 @@
 {
-  "name": "proforosh-app",
+  "name": "services-app",
   "version": "1.0.0",
-  "description": "پروژه فروشگاهی و خدمات همه کاره",
+  "description": "پروژه خدمات همه کاره با فایربیس و ImgBB",
   "main": "index.html",
   "scripts": {
     "start": "serve ."
