@@ -4,12 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>خدمات همه کاره</title>
-  
-  <!-- کتابخانه‌های فایربیس v8 (کاملاً پایدار برای موبایل) -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-  <!-- پیکربندی کلیدها -->
+  <!-- پیکربندی مشترک و واسطه Vercel -->
   <script src="./api/config.js"></script>
 
   <style>
@@ -134,7 +130,7 @@
 
   <div class="products-grid" id="productsGrid"></div>
 
-  <!-- پاپ‌آپ‌ها -->
+  <!-- پاپ‌آ‌پ انتخاب ورود یا ثبت نام -->
   <div class="modal" id="authChoiceModal">
     <div class="modal-content">
       <h3>ورود یا ثبت نام</h3>
@@ -144,27 +140,30 @@
     </div>
   </div>
 
+  <!-- پاپ‌آپ ثبت نام -->
   <div class="modal" id="registerModal">
     <div class="modal-content">
       <h3>ثبت نام جدید</h3>
       <input type="text" id="regName" placeholder="نام (حداکثر ۶ حرف)" maxlength="6">
       <input type="text" id="regUser" placeholder="نام کاربری (حداقل ۵ حرف)">
       <input type="password" id="regPass" placeholder="رمز عبور (حداقل ۵ حرف)">
-      <button class="modal-btn" onclick="handleRegister()">ثبت نام</button>
+      <button class="modal-btn" id="regBtn" onclick="handleRegister()">ثبت نام</button>
       <button class="modal-btn close-btn" onclick="closeModal('registerModal')">بستن</button>
     </div>
   </div>
 
+  <!-- پاپ‌آپ ورود کاربر -->
   <div class="modal" id="loginModal">
     <div class="modal-content">
       <h3>ورود به حساب</h3>
       <input type="text" id="loginUser" placeholder="نام کاربری">
       <input type="password" id="loginPass" placeholder="رمز عبور">
-      <button class="modal-btn" onclick="handleLogin()">ورود</button>
+      <button class="modal-btn" id="loginBtn" onclick="handleLogin()">ورود</button>
       <button class="modal-btn close-btn" onclick="closeModal('loginModal')">بستن</button>
     </div>
   </div>
 
+  <!-- پاپ‌آپ اطلاعات حساب -->
   <div class="modal" id="userInfoModal">
     <div class="modal-content">
       <h3>اطلاعات حساب</h3>
@@ -174,16 +173,18 @@
     </div>
   </div>
 
+  <!-- پاپ‌آپ ورود مدیریت -->
   <div class="modal" id="adminAuthModal">
     <div class="modal-content">
       <h3>ورود مدیریت</h3>
       <input type="text" id="adminUser" placeholder="نام کاربری مدیر">
       <input type="password" id="adminPass" placeholder="رمز عبور مدیر">
-      <button class="modal-btn" onclick="handleAdminLogin()">ورود به پنل</button>
+      <button class="modal-btn" id="adminBtn" onclick="handleAdminLogin()">ورود به پنل</button>
       <button class="modal-btn close-btn" onclick="closeModal('adminAuthModal')">بستن</button>
     </div>
   </div>
 
+  <!-- پاپ‌آپ اعلانات -->
   <div class="modal" id="notifModal">
     <div class="modal-content">
       <h3>اعلانات شما</h3>
@@ -192,6 +193,7 @@
     </div>
   </div>
 
+  <!-- پاپ‌آپ جزئیات محصول -->
   <div class="modal" id="productDetailsModal">
     <div class="modal-content">
       <h3 id="pDetailsTitle"></h3>
@@ -206,6 +208,7 @@
     </div>
   </div>
 
+  <!-- پاپ‌آپ خرید -->
   <div class="modal" id="buyModal">
     <div class="modal-content">
       <h3>اطلاعات پرداخت</h3>
@@ -220,23 +223,12 @@
   </div>
 
   <script>
-    // راه‌اندازی ایمن فایربیس
-    let db;
-    try {
-      if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-      }
-      db = firebase.database();
-    } catch(e) {
-      console.error("Firebase Init Error:", e);
-    }
-
     let currentUser = JSON.parse(localStorage.getItem('user')) || null;
     let selectedProduct = null;
 
     window.onload = function() {
       updateUserUI();
-      if(db) loadProducts();
+      loadProducts();
       preventBackOnSession();
     };
 
@@ -273,48 +265,63 @@
       }
     }
 
-    function handleRegister() {
+    // ثبت نام کاربر جدید از طریق API Vercel
+    async function handleRegister() {
       const name = document.getElementById('regName').value.trim();
       const username = document.getElementById('regUser').value.trim();
       const password = document.getElementById('regPass').value.trim();
+      const btn = document.getElementById('regBtn');
 
       if (name.length === 0 || name.length > 6) return alert("نام باید حداکثر ۶ حرف باشد.");
       if (username.length < 5) return alert("نام کاربری باید حداقل ۵ حرف باشد.");
       if (password.length < 5) return alert("رمز عبور باید حداقل ۵ حرف باشد.");
 
-      db.ref('users/' + username).once('value', snapshot => {
-        if (snapshot.exists()) {
-          alert("این نام کاربری از قبل وجود دارد.");
-        } else {
-          const userData = { name, username, password };
-          db.ref('users/' + username).set(userData, err => {
-            if (!err) {
-              currentUser = userData;
-              localStorage.setItem('user', JSON.stringify(userData));
-              updateUserUI();
-              closeModal('registerModal');
-              alert("ثبت نام با موفقیت انجام شد.");
-            }
-          });
-        }
-      });
+      btn.innerText = "در حال بررسی...";
+      btn.disabled = true;
+
+      const existingUser = await DB.get(`users/${username}`);
+      if (existingUser) {
+        btn.innerText = "ثبت نام";
+        btn.disabled = false;
+        return alert("این نام کاربری از قبل وجود دارد.");
+      }
+
+      const userData = { name, username, password };
+      await DB.set(`users/${username}`, userData);
+
+      currentUser = userData;
+      localStorage.setItem('user', JSON.stringify(userData));
+      updateUserUI();
+      closeModal('registerModal');
+      btn.innerText = "ثبت نام";
+      btn.disabled = false;
+      alert("ثبت نام با موفقیت انجام شد.");
     }
 
-    function handleLogin() {
+    // ورود کاربر از طریق API Vercel
+    async function handleLogin() {
       const username = document.getElementById('loginUser').value.trim();
       const password = document.getElementById('loginPass').value.trim();
+      const btn = document.getElementById('loginBtn');
 
-      db.ref('users/' + username).once('value', snapshot => {
-        if (snapshot.exists() && snapshot.val().password === password) {
-          currentUser = snapshot.val();
-          localStorage.setItem('user', JSON.stringify(currentUser));
-          updateUserUI();
-          closeModal('loginModal');
-          alert("ورود با موفقیت انجام شد.");
-        } else {
-          alert("نام کاربری یا رمز عبور اشتباه است.");
-        }
-      });
+      if(!username || !password) return alert("نام کاربری و رمز عبور را وارد کنید.");
+
+      btn.innerText = "در حال بررسی...";
+      btn.disabled = true;
+
+      const userData = await DB.get(`users/${username}`);
+      btn.innerText = "ورود";
+      btn.disabled = false;
+
+      if (userData && userData.password === password) {
+        currentUser = userData;
+        localStorage.setItem('user', JSON.stringify(currentUser));
+        updateUserUI();
+        closeModal('loginModal');
+        alert("ورود با موفقیت انجام شد.");
+      } else {
+        alert("نام کاربری یا رمز عبور اشتباه است.");
+      }
     }
 
     function handleLogout() {
@@ -324,35 +331,48 @@
       closeModal('userInfoModal');
     }
 
-    function handleAdminLogin() {
+    // ورود مدیر از طریق API Vercel
+    async function handleAdminLogin() {
       const u = document.getElementById('adminUser').value.trim();
       const p = document.getElementById('adminPass').value.trim();
+      const btn = document.getElementById('adminBtn');
 
-      db.ref('admin').once('value', snapshot => {
-        const adminData = snapshot.val() || { username: "admin", password: "admin" };
-        if (u === adminData.username && p === adminData.password) {
-          localStorage.setItem('adminAuth', 'true');
-          window.location.href = 'modiree.html';
-        } else {
-          alert("اطلاعات مدیر اشتباه است.");
-        }
-      });
+      btn.innerText = "در حال بررسی...";
+      btn.disabled = true;
+
+      let adminData = await DB.get('admin');
+      btn.innerText = "ورود به پنل";
+      btn.disabled = false;
+
+      if (!adminData) {
+        adminData = { username: "admin", password: "admin" };
+      }
+
+      if (u === adminData.username && p === adminData.password) {
+        localStorage.setItem('adminAuth', 'true');
+        window.location.href = 'modiree.html';
+      } else {
+        alert("اطلاعات مدیر اشتباه است.");
+      }
     }
 
-    function openNotifs() {
+    // اعلانات
+    async function openNotifs() {
       if (!currentUser) {
         alert("لطفاً ابتدا ثبت‌نام کنید یا وارد شوید.");
         openModal('authChoiceModal');
         return;
       }
       const list = document.getElementById('notifList');
-      list.innerHTML = "در حال دریافت...";
+      list.innerHTML = "در حال دریافت اعلانات...";
       openModal('notifModal');
 
-      db.ref('notifications').once('value', snapshot => {
-        list.innerHTML = "";
-        snapshot.forEach(child => {
-          const n = child.val();
+      const notifs = await DB.get('notifications');
+      list.innerHTML = "";
+
+      if (notifs) {
+        Object.keys(notifs).forEach(key => {
+          const n = notifs[key];
           if (n.type === 'public' || (n.type === 'personal' && n.targetUser === currentUser.username)) {
             const div = document.createElement('div');
             div.className = 'notif-item';
@@ -360,8 +380,9 @@
             list.appendChild(div);
           }
         });
-        if (!list.innerHTML) list.innerHTML = "اعلانی وجود ندارد.";
-      });
+      }
+      
+      if (!list.innerHTML) list.innerHTML = "اعلانی وجود ندارد.";
     }
 
     function goToSupport() {
@@ -377,13 +398,18 @@
       window.location.href = 'posht.html?ref=receipt';
     }
 
-    function loadProducts() {
-      db.ref('products').on('value', snapshot => {
-        const grid = document.getElementById('productsGrid');
-        grid.innerHTML = "";
-        snapshot.forEach(child => {
-          const p = child.val();
-          p.id = child.key;
+    // بارگذاری لیست محصولات
+    async function loadProducts() {
+      const grid = document.getElementById('productsGrid');
+      grid.innerHTML = "در حال بارگذاری محصولات...";
+      
+      const products = await DB.get('products');
+      grid.innerHTML = "";
+
+      if (products) {
+        Object.keys(products).forEach(key => {
+          const p = products[key];
+          p.id = key;
           const card = document.createElement('div');
           card.className = 'product-card';
           card.onclick = () => showProductDetails(p);
@@ -394,7 +420,9 @@
           `;
           grid.appendChild(card);
         });
-      });
+      } else {
+        grid.innerHTML = "<p style='grid-column: span 2; text-align:center;'>محصولی موجود نیست.</p>";
+      }
     }
 
     function showProductDetails(p) {
@@ -427,4 +455,3 @@
   </script>
 </body>
 </html>
- 
