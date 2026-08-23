@@ -1,0 +1,12 @@
+{
+  "name": "proforosh-app",
+  "version": "1.0.0",
+  "description": "پروژه فروشگاهی و خدمات همه کاره",
+  "main": "index.html",
+  "scripts": {
+    "start": "serve ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
