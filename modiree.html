@@ -5,12 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>پنل مدیریت</title>
 
-  <!-- SDK فایربیس -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-
-  <!-- پیکربندی مشترک -->
-  <script src="./api/config.js"></script>
+  <!-- فایل تنظیمات اصلی -->
+  <script src="./config.js"></script>
 
   <style>
     :root {
@@ -108,7 +104,7 @@
     }
     .msg-box {
       border: 1px solid #eee; padding: 8px; border-radius: 6px;
-      max-height: 150px; overflow-y: auto; text-align: right; margin: 8px 0;
+      max-height: 180px; overflow-y: auto; text-align: right; margin: 8px 0;
     }
     .msg-item { margin: 5px 0; padding: 5px; border-bottom: 1px dashed #ddd; font-size: 12px; }
   </style>
@@ -123,7 +119,7 @@
   </header>
 
   <!-- لیست محصولات برای مدیریت -->
-  <div class="products-list" id="adminProductsList"></div>
+  <div class="products-list" id="adminProductsList">در حال بارگذاری محصولات...</div>
 
   <!-- نوار پایین -->
   <div class="bottom-bar">
@@ -209,20 +205,17 @@
       <div class="msg-box" id="chatHistory"></div>
       <textarea id="replyText" placeholder="متن پاسخ..."></textarea>
       <input type="file" id="replyImg" accept="image/*">
-      <button class="modal-btn" onclick="sendReply()">ارسال پاسخ</button>
-      <button class="modal-btn close-btn" onclick="closeModal('chatModal')">بستن</button>
+      <button class="modal-btn" id="replyBtn" onclick="sendReply()">ارسال پاسخ</button>
+      <button class="modal-btn close-btn" onclick="closeChatModal()">بستن</button>
     </div>
   </div>
 
   <script>
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
     let currentEditProdId = null;
     let selectedUserForNotif = null;
     let selectedUserForChat = null;
+    let chatInterval = null;
 
-    // بررسی احراز هویت مدیر و جلوگیری از بازگشت مرورگر
     window.onload = function() {
       if (localStorage.getItem('adminAuth') !== 'true') {
         window.location.href = 'index.html';
@@ -240,27 +233,26 @@
     function openModal(id) { document.getElementById(id).classList.add('active'); }
     function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
-    // خروج مدیر
     function handleAdminLogout() {
       localStorage.removeItem('adminAuth');
       window.location.href = 'index.html';
     }
 
     // ذخیره اطلاعات جدید مدیر
-    function saveAdminInfo() {
+    async function saveAdminInfo() {
       const username = document.getElementById('newAdminUser').value.trim();
       const password = document.getElementById('newAdminPass').value.trim();
       if (!username || !password) return alert("لطفاً همه فیلدها را پر کنید.");
 
-      db.ref('admin').set({ username, password }, err => {
-        if (!err) {
-          alert("اطلاعات مدیر با موفقیت به‌روزرسانی شد.");
-          closeModal('adminInfoModal');
-        }
-      });
+      const res = await DB.set('admin', { username, password });
+      if (res) {
+        alert("اطلاعات مدیر با موفقیت به‌روزرسانی شد.");
+        closeModal('adminInfoModal');
+      } else {
+        alert("خطا در به روزرسانی اطلاعات مدیر.");
+      }
     }
 
-    // باز کردن فرم افزودن محصول
     function openAddProductModal() {
       currentEditProdId = null;
       document.getElementById('prodModalTitle').innerText = "افزودن محصول";
@@ -274,14 +266,16 @@
       openModal('productFormModal');
     }
 
-    // بارگذاری لیست محصولات
-    function loadAdminProducts() {
-      db.ref('products').on('value', snapshot => {
-        const list = document.getElementById('adminProductsList');
-        list.innerHTML = "";
-        snapshot.forEach(child => {
-          const p = child.val();
-          p.id = child.key;
+    // بارگذاری لیست محصولات از طریق Vercel
+    async function loadAdminProducts() {
+      const list = document.getElementById('adminProductsList');
+      const products = await DB.get('products');
+      list.innerHTML = "";
+
+      if (products) {
+        Object.keys(products).forEach(key => {
+          const p = products[key];
+          p.id = key;
           const card = document.createElement('div');
           card.className = 'admin-prod-card';
           card.innerHTML = `
@@ -297,10 +291,12 @@
           `;
           list.appendChild(card);
         });
-      });
+      } else {
+        list.innerHTML = "<p style='text-align:center;'>محصولی وجود ندارد.</p>";
+      }
     }
 
-    // ثبت یا ویرایش محصول با آپلود در ImgBB
+    // ثبت یا ویرایش محصول
     async function saveProduct() {
       const saveBtn = document.getElementById('saveProdBtn');
       const price = document.getElementById('prodPrice').value.trim();
@@ -329,23 +325,14 @@
           if (url) extraImgUrls.push(url);
         }
 
-        const productData = {
-          price, desc, cardNum, cardName, rubika
-        };
+        let productData = { price, desc, cardNum, cardName, rubika };
 
         if (currentEditProdId) {
-          // در حال ویرایش
-          db.ref('products/' + currentEditProdId).once('value', snapshot => {
-            const oldData = snapshot.val();
-            productData.mainImg = mainImgUrl || oldData.mainImg;
-            productData.extraImgs = extraImgUrls.length > 0 ? extraImgUrls : (oldData.extraImgs || []);
-
-            db.ref('products/' + currentEditProdId).update(productData, () => {
-              finishSave();
-            });
-          });
+          const oldData = await DB.get(`products/${currentEditProdId}`);
+          productData.mainImg = mainImgUrl || oldData.mainImg;
+          productData.extraImgs = extraImgUrls.length > 0 ? extraImgUrls : (oldData.extraImgs || []);
+          await DB.set(`products/${currentEditProdId}`, productData);
         } else {
-          // محصول جدید
           if (!mainImgUrl) {
             alert("انتخاب عکس اصلی برای محصول جدید الزامی است.");
             saveBtn.innerText = "ثبت محصول";
@@ -354,24 +341,20 @@
           }
           productData.mainImg = mainImgUrl;
           productData.extraImgs = extraImgUrls;
-
-          db.ref('products').push(productData, () => {
-            finishSave();
-          });
+          await DB.push('products', productData);
         }
+
+        saveBtn.innerText = "ثبت محصول";
+        saveBtn.disabled = false;
+        closeModal('productFormModal');
+        alert("محصول با موفقیت ثبت/ویرایش شد.");
+        loadAdminProducts();
+
       } catch (e) {
         alert("خطایی رخ داد.");
         saveBtn.innerText = "ثبت محصول";
         saveBtn.disabled = false;
       }
-    }
-
-    function finishSave() {
-      const saveBtn = document.getElementById('saveProdBtn');
-      saveBtn.innerText = "ثبت محصول";
-      saveBtn.disabled = false;
-      closeModal('productFormModal');
-      alert("محصول با موفقیت ثبت/ویرایش شد.");
     }
 
     function editProduct(p) {
@@ -385,40 +368,43 @@
       openModal('productFormModal');
     }
 
-    function deleteProduct(id) {
+    async function deleteProduct(id) {
       if (confirm("آیا از حذف این محصول اطمینان دارید؟")) {
-        db.ref('products/' + id).remove();
+        await DB.set(`products/${id}`, null);
+        loadAdminProducts();
       }
     }
 
     // ارسال اعلان عمومی
-    function sendPublicNotif() {
+    async function sendPublicNotif() {
       const text = document.getElementById('pubNotifText').value.trim();
       if (!text) return alert("متن اعلان را وارد کنید.");
 
-      db.ref('notifications').push({
+      const res = await DB.push('notifications', {
         type: 'public',
         text: text,
         date: Date.now()
-      }, err => {
-        if (!err) {
-          alert("اعلان عمومی ارسال شد.");
-          document.getElementById('pubNotifText').value = "";
-          closeModal('pubNotifModal');
-        }
       });
+
+      if (res) {
+        alert("اعلان عمومی ارسال شد.");
+        document.getElementById('pubNotifText').value = "";
+        closeModal('pubNotifModal');
+      }
     }
 
     // لیست کاربران
-    function openUsersModal() {
+    async function openUsersModal() {
       const container = document.getElementById('usersListContainer');
       container.innerHTML = "در حال بارگذاری...";
       openModal('usersListModal');
 
-      db.ref('users').once('value', snapshot => {
-        container.innerHTML = "";
-        snapshot.forEach(child => {
-          const u = child.val();
+      const users = await DB.get('users');
+      container.innerHTML = "";
+
+      if (users) {
+        Object.keys(users).forEach(key => {
+          const u = users[key];
           const div = document.createElement('div');
           div.className = 'item-row';
           div.innerHTML = `<b>نام:</b> ${u.name} | <b>یوزر:</b> ${u.username} | <b>رمز:</b> ${u.password}`;
@@ -430,41 +416,44 @@
           };
           container.appendChild(div);
         });
-        if (!container.innerHTML) container.innerHTML = "هیچ کاربری یافت نشد.";
-      });
+      } else {
+        container.innerHTML = "هیچ کاربری یافت نشد.";
+      }
     }
 
     // ارسال اعلان شخصی
-    function sendPersonalNotif() {
+    async function sendPersonalNotif() {
       const text = document.getElementById('personalNotifText').value.trim();
       if (!text || !selectedUserForNotif) return alert("متن را وارد کنید.");
 
-      db.ref('notifications').push({
+      const res = await DB.push('notifications', {
         type: 'personal',
         targetUser: selectedUserForNotif,
         text: text,
         date: Date.now()
-      }, err => {
-        if (!err) {
-          alert("اعلان شخصی ارسال شد.");
-          document.getElementById('personalNotifText').value = "";
-          closeModal('personalNotifModal');
-        }
       });
+
+      if (res) {
+        alert("اعلان شخصی ارسال شد.");
+        document.getElementById('personalNotifText').value = "";
+        closeModal('personalNotifModal');
+      }
     }
 
     // لیست پیام کاربران
-    function openUserMessagesModal() {
+    async function openUserMessagesModal() {
       const container = document.getElementById('userMsgsContainer');
       container.innerHTML = "در حال بارگذاری...";
       openModal('userMsgsListModal');
 
-      db.ref('messages').once('value', snapshot => {
-        container.innerHTML = "";
+      const messages = await DB.get('messages');
+      container.innerHTML = "";
+
+      if (messages) {
         const usersWithMsgs = new Set();
-        snapshot.forEach(child => {
-          const m = child.val();
-          if (m.sender) usersWithMsgs.add(m.sender);
+        Object.keys(messages).forEach(key => {
+          const m = messages[key];
+          if (m.sender && m.sender !== 'admin') usersWithMsgs.add(m.sender);
         });
 
         usersWithMsgs.forEach(username => {
@@ -474,9 +463,9 @@
           div.onclick = () => openChatWithUser(username);
           container.appendChild(div);
         });
+      }
 
-        if (!container.innerHTML) container.innerHTML = "پیامی دریافت نشده است.";
-      });
+      if (!container.innerHTML) container.innerHTML = "پیامی دریافت نشده است.";
     }
 
     function openChatWithUser(username) {
@@ -485,52 +474,88 @@
       document.getElementById('chatTitle').innerText = `گفتگو با ${username}`;
       openModal('chatModal');
 
-      // دریافت گفتگوها
-      db.ref('messages').on('value', snapshot => {
-        const box = document.getElementById('chatHistory');
-        box.innerHTML = "";
-        snapshot.forEach(child => {
-          const m = child.val();
-          if (m.sender === username || m.receiver === username) {
-            const div = document.createElement('div');
-            div.className = 'msg-item';
-            div.style.textAlign = m.sender === 'admin' ? 'left' : 'right';
-            let content = `<b>${m.sender}:</b> ${m.text || ''}`;
-            if (m.imgUrl) {
-              content += `<br><img src="${m.imgUrl}" style="max-width:100px; border-radius:4px; margin-top:4px;">`;
-            }
-            div.innerHTML = content;
-            box.appendChild(div);
+      loadChatHistory();
+      chatInterval = setInterval(loadChatHistory, 3000);
+    }
+
+    function closeChatModal() {
+      if (chatInterval) clearInterval(chatInterval);
+      closeModal('chatModal');
+    }
+
+    async function loadChatHistory() {
+      if (!selectedUserForChat) return;
+      const messages = await DB.get('messages');
+      const box = document.getElementById('chatHistory');
+      
+      if (!messages) {
+        box.innerHTML = "پیامی یافت نشد.";
+        return;
+      }
+
+      const isScrolledToBottom = box.scrollHeight - box.clientHeight <= box.scrollTop + 50;
+      box.innerHTML = "";
+
+      Object.keys(messages).forEach(key => {
+        const m = messages[key];
+        if (m.sender === selectedUserForChat || m.receiver === selectedUserForChat) {
+          const div = document.createElement('div');
+          div.className = 'msg-item';
+          div.style.textAlign = m.sender === 'admin' ? 'left' : 'right';
+          let content = `<b>${m.sender}:</b> ${m.text || ''}`;
+          if (m.imgUrl) {
+            content += `<br><img src="${m.imgUrl}" style="max-width:100px; border-radius:4px; margin-top:4px;">`;
           }
-        });
-        box.scrollTop = box.scrollHeight;
+          div.innerHTML = content;
+          box.appendChild(div);
+        }
       });
+
+      if (isScrolledToBottom) {
+        box.scrollTop = box.scrollHeight;
+      }
     }
 
     // پاسخ مدیر به کاربر
     async function sendReply() {
       const text = document.getElementById('replyText').value.trim();
       const imgFile = document.getElementById('replyImg').files[0];
+      const replyBtn = document.getElementById('replyBtn');
 
       if (!text && !imgFile) return alert("متن یا عکس وارد کنید.");
 
-      let imgUrl = "";
-      if (imgFile) {
-        imgUrl = await uploadToImgBB(imgFile);
-      }
+      replyBtn.innerText = "در حال ارسال...";
+      replyBtn.disabled = true;
 
-      db.ref('messages').push({
-        sender: 'admin',
-        receiver: selectedUserForChat,
-        text: text,
-        imgUrl: imgUrl,
-        date: Date.now()
-      }, () => {
+      try {
+        let imgUrl = "";
+        if (imgFile) {
+          imgUrl = await uploadToImgBB(imgFile);
+        }
+
+        await DB.push('messages', {
+          sender: 'admin',
+          receiver: selectedUserForChat,
+          text: text,
+          imgUrl: imgUrl || "",
+          date: Date.now()
+        });
+
         document.getElementById('replyText').value = "";
         document.getElementById('replyImg').value = "";
-      });
+        replyBtn.innerText = "ارسال پاسخ";
+        replyBtn.disabled = false;
+
+        await loadChatHistory();
+        const box = document.getElementById('chatHistory');
+        box.scrollTop = box.scrollHeight;
+
+      } catch (e) {
+        replyBtn.innerText = "ارسال پاسخ";
+        replyBtn.disabled = false;
+        alert("خطا در ارسال پاسخ.");
+      }
     }
   </script>
 </body>
 </html>
- 
