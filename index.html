@@ -1,671 +1,442 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>خدمات همه کاره</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>خدمات همه کاره</title>
+  
+  <!-- SDK فایربیس نسخه ماژولار -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+  <!-- پیکربندی مشترک -->
+  <script src="./api/config.js"></script>
+
+  <style>
+    :root {
+      --bg-color: #f4f6f9;
+      --card-bg: #ffffff;
+      --primary: #4a90e2;
+      --text: #333;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Tahoma, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text); padding-bottom: 30px; }
     
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    /* هدر */
+    header {
+      background-color: var(--card-bg);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 15px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-title { font-weight: bold; font-size: 16px; }
+    .header-left, .header-right { display: flex; align-items: center; gap: 8px; }
     
-    <!-- تنظیمات فایربیس و ImgBB -->
-    <script src="./api/config.js"></script>
+    /* دکمه‌ها و دایره‌ها */
+    .icon-btn {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: var(--primary); color: #fff;
+      display: flex; justify-content: center; align-items: center;
+      cursor: pointer; font-size: 11px; text-align: center;
+      border: none; font-weight: bold; padding: 2px;
+    }
+    .btn-group { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    .sub-btn {
+      background: #e0e0e0; border: none; padding: 3px 8px;
+      border-radius: 10px; font-size: 11px; cursor: pointer;
+    }
+    .dots-btn { font-size: 20px; background: transparent; color: #333; border: none; cursor: pointer; padding: 5px; }
 
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-        }
+    /* شبکه‌بندی محصولات (۲ تایی) */
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      padding: 15px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .product-card {
+      background: var(--card-bg);
+      border-radius: 10px;
+      padding: 10px;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .product-card img {
+      width: 100%; aspect-ratio: 1/1; object-fit: cover;
+      border-radius: 8px; margin-bottom: 8px;
+    }
+    .product-title { font-size: 13px; font-weight: bold; margin-bottom: 5px; }
+    .product-price { font-size: 12px; color: #27ae60; font-weight: bold; }
 
-        body {
-            background-color: #f4f6f9;
-            color: #333;
-            padding-bottom: 30px;
-        }
-
-        header {
-            background-color: #ffffff;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            padding: 12px 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .header-title {
-            font-size: 15px;
-            font-weight: bold;
-            color: #2c3e50;
-            text-align: center;
-            flex-grow: 1;
-        }
-
-        .header-section {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .icon-circle {
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            background-color: #3498db;
-            color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 11px;
-            text-align: center;
-            font-weight: bold;
-            border: none;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
-            padding: 2px;
-            overflow: hidden;
-            word-break: break-word;
-        }
-
-        .btn-small {
-            background-color: #2ecc71;
-            color: white;
-            border: none;
-            padding: 6px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .menu-dots {
-            font-size: 22px;
-            cursor: pointer;
-            padding: 0 6px;
-            color: #555;
-            user-select: none;
-        }
-
-        .left-controls {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 20px auto;
-            padding: 0 12px;
-        }
-
-        .product-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-        }
-
-        .product-card {
-            background: #fff;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-            display: flex;
-            flex-direction: column;
-            cursor: pointer;
-        }
-
-        .product-card img {
-            width: 100%;
-            aspect-ratio: 1 / 1;
-            object-fit: cover;
-            background-color: #eee;
-        }
-
-        .product-info {
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .product-title {
-            font-size: 13px;
-            font-weight: bold;
-            color: #333;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .product-price {
-            font-size: 12px;
-            color: #e74c3c;
-            font-weight: bold;
-        }
-
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 16px;
-        }
-
-        .modal-overlay.active {
-            display: flex;
-        }
-
-        .modal-box {
-            background: #fff;
-            border-radius: 16px;
-            padding: 20px;
-            width: 100%;
-            max-width: 400px;
-            max-height: 85vh;
-            overflow-y: auto;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            position: relative;
-        }
-
-        .modal-title {
-            font-size: 15px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            text-align: center;
-            color: #2c3e50;
-        }
-
-        .form-group {
-            margin-bottom: 12px;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 12px;
-            margin-bottom: 4px;
-            color: #666;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 14px;
-            outline: none;
-        }
-
-        .fake-pass {
-            -webkit-text-security: disc !important;
-            font-family: text-security-disc, sans-serif !important;
-        }
-
-        .btn-block {
-            width: 100%;
-            padding: 10px;
-            background: #3498db;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 14px;
-            cursor: pointer;
-            margin-top: 8px;
-        }
-
-        .btn-danger { background: #e74c3c; }
-
-        .btn-close {
-            position: absolute;
-            top: 12px;
-            left: 12px;
-            background: none;
-            border: none;
-            font-size: 18px;
-            cursor: pointer;
-            color: #888;
-        }
-
-        .slider-container {
-            display: flex;
-            overflow-x: auto;
-            gap: 8px;
-            margin-bottom: 12px;
-            scroll-snap-type: x mandatory;
-            padding-bottom: 6px;
-        }
-
-        .slider-container img {
-            width: 100%;
-            max-width: 280px;
-            height: 200px;
-            object-fit: cover;
-            border-radius: 8px;
-            scroll-snap-align: center;
-            flex-shrink: 0;
-        }
-
-        .notification-item {
-            background: #f8f9fa;
-            border-right: 4px solid #3498db;
-            padding: 10px;
-            border-radius: 6px;
-            margin-bottom: 8px;
-            font-size: 13px;
-        }
-
-        .notification-item.personal {
-            border-right-color: #e67e22;
-        }
-
-        .notification-date {
-            font-size: 10px;
-            color: #999;
-            margin-top: 4px;
-        }
-    </style>
+    /* پاپ‌آپ‌ها */
+    .modal {
+      display: none; position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%; background: rgba(0,0,0,0.5);
+      justify-content: center; align-items: center; z-index: 1000;
+    }
+    .modal.active { display: flex; }
+    .modal-content {
+      background: #fff; width: 88%; max-width: 380px;
+      border-radius: 12px; padding: 18px; text-align: center;
+      max-height: 85vh; overflow-y: auto; position: relative;
+    }
+    .modal-content h3 { margin-bottom: 15px; font-size: 15px; }
+    .modal-content input {
+      width: 100%; padding: 8px; margin: 6px 0;
+      border: 1px solid #ccc; border-radius: 6px; font-size: 13px;
+    }
+    .modal-btn {
+      width: 100%; padding: 9px; margin-top: 8px;
+      background: var(--primary); color: #fff; border: none;
+      border-radius: 6px; cursor: pointer; font-weight: bold;
+    }
+    .close-btn {
+      background: #e74c3c; margin-top: 5px;
+    }
+    
+    /* اسلایدر عکس‌های اضافی */
+    .slider-container {
+      display: flex; overflow-x: auto; gap: 8px;
+      margin: 10px 0; padding-bottom: 5px;
+    }
+    .slider-container img {
+      width: 80px; height: 80px; border-radius: 6px; object-fit: cover; flex-shrink: 0;
+    }
+    
+    /* لیست اعلانات */
+    .notif-item {
+      background: #f8f9fa; border-right: 3px solid var(--primary);
+      padding: 8px; margin: 6px 0; text-align: right; font-size: 12px;
+      border-radius: 4px;
+    }
+  </style>
 </head>
 <body>
 
-    <header>
-        <div class="header-section">
-            <span class="menu-dots" onclick="openAdminModal()">⋮</span>
-        </div>
-
-        <div class="header-title">
-            💎 خدمات همه کاره 💎
-        </div>
-
-        <div class="header-section">
-            <div id="userBtn" class="icon-circle" onclick="handleUserClick()">ورود/ثبت نام</div>
-            <div class="left-controls">
-                <button class="icon-circle" onclick="openNotifications()">🔔</button>
-                <button class="btn-small" onclick="goToSupport()">پشتیبانی</button>
-            </div>
-        </div>
-    </header>
-
-    <div class="container">
-        <div class="product-grid" id="productGrid">
-            <p style="grid-column: span 2; text-align: center; color: #777;">در حال بارگذاری محصولات...</p>
-        </div>
+  <!-- هدر سایت -->
+  <header>
+    <div class="header-right">
+      <button class="dots-btn" onclick="openModal('adminAuthModal')">⋮</button>
     </div>
+    
+    <div class="header-title">💎 خدمات همه کاره 💎</div>
 
-    <!-- پاپ آپ‌ها -->
-    <div class="modal-overlay" id="authChoiceModal">
-        <div class="modal-box">
-            <button class="btn-close" onclick="closeModal('authChoiceModal')">✕</button>
-            <div class="modal-title">ورود به حساب یا ثبت نام</div>
-            <button class="btn-block" onclick="showLoginModal()">ورود (با رمز عبور)</button>
-            <button class="btn-block" style="background:#2ecc71;" onclick="showRegisterModal()">ثبت نام (اعضای جدید)</button>
-        </div>
+    <div class="header-left">
+      <div class="icon-btn" id="userCircle" onclick="handleUserCircleClick()">ورود/ثبت‌نام</div>
+      <div class="btn-group">
+        <div class="icon-btn" onclick="openNotifs()">🔔</div>
+        <button class="sub-btn" onclick="goToSupport()">پشتیبانی</button>
+      </div>
     </div>
+  </header>
 
-    <div class="modal-overlay" id="registerModal">
-        <div class="modal-box">
-            <button class="btn-close" onclick="closeModal('registerModal')">✕</button>
-            <div class="modal-title">ثبت نام جدید</div>
-            <div class="form-group">
-                <label>نام (حداکثر ۶ حرف)</label>
-                <input type="text" id="regName" class="form-control" maxlength="6" autocomplete="off">
-            </div>
-            <div class="form-group">
-                <label>نام کاربری (حداقل ۵ حرف)</label>
-                <input type="text" id="regUser" class="form-control" autocomplete="off">
-            </div>
-            <div class="form-group">
-                <label>رمز عبور (حداقل ۵ حرف)</label>
-                <input type="text" id="regPass" class="form-control fake-pass" autocomplete="off" spellcheck="false">
-            </div>
-            <button class="btn-block" onclick="processRegister()">ثبت نام</button>
-        </div>
+  <!-- لیست محصولات -->
+  <div class="products-grid" id="productsGrid"></div>
+
+  <!-- پاپ‌آپ انتخابی ورود / ثبت نام -->
+  <div class="modal" id="authChoiceModal">
+    <div class="modal-content">
+      <h3>ورود یا ثبت نام</h3>
+      <button class="modal-btn" onclick="closeModal('authChoiceModal'); openModal('loginModal')">ورود (با رمز عبور)</button>
+      <button class="modal-btn" style="background:#27ae60;" onclick="closeModal('authChoiceModal'); openModal('registerModal')">ثبت نام (اعضای جدید)</button>
+      <button class="modal-btn close-btn" onclick="closeModal('authChoiceModal')">بستن</button>
     </div>
+  </div>
 
-    <div class="modal-overlay" id="loginModal">
-        <div class="modal-box">
-            <button class="btn-close" onclick="closeModal('loginModal')">✕</button>
-            <div class="modal-title">ورود به حساب</div>
-            <div class="form-group">
-                <label>نام کاربری</label>
-                <input type="text" id="loginUser" class="form-control" autocomplete="off">
-            </div>
-            <div class="form-group">
-                <label>رمز عبور</label>
-                <input type="text" id="loginPass" class="form-control fake-pass" autocomplete="off" spellcheck="false">
-            </div>
-            <button class="btn-block" onclick="processLogin()">ورود</button>
-        </div>
+  <!-- پاپ‌آپ ثبت نام -->
+  <div class="modal" id="registerModal">
+    <div class="modal-content">
+      <h3>ثبت نام جدید</h3>
+      <input type="text" id="regName" placeholder="نام (حداکثر ۶ حرف)" maxlength="6">
+      <input type="text" id="regUser" placeholder="نام کاربری (حداقل ۵ حرف)">
+      <input type="password" id="regPass" placeholder="رمز عبور (حداقل ۵ حرف)">
+      <button class="modal-btn" onclick="handleRegister()">ثبت نام</button>
+      <button class="modal-btn close-btn" onclick="closeModal('registerModal')">بستن</button>
     </div>
+  </div>
 
-    <div class="modal-overlay" id="accountModal">
-        <div class="modal-box">
-            <button class="btn-close" onclick="closeModal('accountModal')">✕</button>
-            <div class="modal-title">اطلاعات کاربری</div>
-            <p style="margin-bottom: 8px;"><strong>نام کاربری:</strong> <span id="accUser"></span></p>
-            <p style="margin-bottom: 16px;"><strong>رمز عبور:</strong> <span id="accPass"></span></p>
-            <button class="btn-block btn-danger" onclick="logout()">خروج از حساب</button>
-        </div>
+  <!-- پاپ‌آپ ورود -->
+  <div class="modal" id="loginModal">
+    <div class="modal-content">
+      <h3>ورود به حساب</h3>
+      <input type="text" id="loginUser" placeholder="نام کاربری">
+      <input type="password" id="loginPass" placeholder="رمز عبور">
+      <button class="modal-btn" onclick="handleLogin()">ورود</button>
+      <button class="modal-btn close-btn" onclick="closeModal('loginModal')">بستن</button>
     </div>
+  </div>
 
-    <div class="modal-overlay" id="adminModal">
-        <div class="modal-box">
-            <button class="btn-close" onclick="closeModal('adminModal')">✕</button>
-            <div class="modal-title">ورود مدیریت</div>
-            <div class="form-group">
-                <label>نام کاربری مدیر</label>
-                <input type="text" id="adminUser" class="form-control" autocomplete="off">
-            </div>
-            <div class="form-group">
-                <label>رمز عبور مدیر</label>
-                <input type="text" id="adminPass" class="form-control fake-pass" autocomplete="off" spellcheck="false">
-            </div>
-            <button class="btn-block" onclick="processAdminLogin()">ورود به پنل</button>
-        </div>
+  <!-- پاپ‌آپ اطلاعات کاربر / خروج -->
+  <div class="modal" id="userInfoModal">
+    <div class="modal-content">
+      <h3>اطلاعات حساب</h3>
+      <p id="userInfoText" style="margin: 10px 0; font-size: 13px;"></p>
+      <button class="modal-btn close-btn" onclick="handleLogout()">خروج از حساب</button>
+      <button class="modal-btn" style="background:#7f8c8d;" onclick="closeModal('userInfoModal')">انصراف</button>
     </div>
+  </div>
 
-    <div class="modal-overlay" id="notifModal">
-        <div class="modal-box">
-            <button class="btn-close" onclick="closeModal('notifModal')">✕</button>
-            <div class="modal-title">اعلان‌ها</div>
-            <div id="notifList">در حال دریافت اعلانات...</div>
-        </div>
+  <!-- پاپ‌آپ ورود مدیر -->
+  <div class="modal" id="adminAuthModal">
+    <div class="modal-content">
+      <h3>ورود مدیریت</h3>
+      <input type="text" id="adminUser" placeholder="نام کاربری مدیر">
+      <input type="password" id="adminPass" placeholder="رمز عبور مدیر">
+      <button class="modal-btn" onclick="handleAdminLogin()">ورود به پنل</button>
+      <button class="modal-btn close-btn" onclick="closeModal('adminAuthModal')">بستن</button>
     </div>
+  </div>
 
-    <div class="modal-overlay" id="productDetailModal">
-        <div class="modal-box">
-            <button class="btn-close" onclick="closeModal('productDetailModal')">✕</button>
-            <div id="productDetailContent"></div>
-        </div>
+  <!-- پاپ‌آپ اعلانات -->
+  <div class="modal" id="notifModal">
+    <div class="modal-content">
+      <h3>اعلانات شما</h3>
+      <div id="notifList"></div>
+      <button class="modal-btn close-btn" onclick="closeModal('notifModal')">بستن</button>
     </div>
+  </div>
 
-    <div class="modal-overlay" id="buyModal">
-        <div class="modal-box">
-            <button class="btn-close" onclick="closeModal('buyModal')">✕</button>
-            <div class="modal-title">اطلاعات پرداخت</div>
-            <div id="buyDetails"></div>
-            <button class="btn-block" style="background:#2ecc71; margin-top:15px;" onclick="redirectToSupportWithReceipt()">ارسال رسید از طریق سایت</button>
-        </div>
+  <!-- پاپ‌آپ جزئیات محصول -->
+  <div class="modal" id="productDetailsModal">
+    <div class="modal-content">
+      <h3 id="pDetailsTitle"></h3>
+      <img id="pDetailsImg" src="" style="width:100%; max-height:180px; object-fit:cover; border-radius:8px;">
+      <p id="pDetailsPrice" style="color:#27ae60; font-weight:bold; margin:8px 0;"></p>
+      <p id="pDetailsDesc" style="font-size:12px; text-align:right; margin-bottom:8px;"></p>
+      
+      <div class="slider-container" id="pDetailsExtraImgs"></div>
+      
+      <button class="modal-btn" style="background:#27ae60;" onclick="openBuyModal()">خرید محصول</button>
+      <button class="modal-btn close-btn" onclick="closeModal('productDetailsModal')">بستن</button>
     </div>
+  </div>
 
-    <script>
-        let currentUser = null;
-        let selectedProduct = null;
+  <!-- پاپ‌آپ اطلاعات پرداخت/خرید -->
+  <div class="modal" id="buyModal">
+    <div class="modal-content">
+      <h3>اطلاعات پرداخت</h3>
+      <div style="font-size:12px; text-align:right; line-height: 1.8;">
+        <p>شماره کارت: <b id="buyCardNum"></b></p>
+        <p>نام صاحب کارت: <b id="buyCardName"></b></p>
+        <p>آیدی روبیکا: <b id="buyRubika"></b></p>
+      </div>
+      <button class="modal-btn" onclick="goToSupportWithReceipt()">ارسال رسید از طریق سایت</button>
+      <button class="modal-btn close-btn" onclick="closeModal('buyModal')">بستن</button>
+    </div>
+  </div>
 
-        window.onload = function() {
-            checkAuthStatus();
-            loadProducts();
-        };
+  <script>
+    // مقداردهی اولیه فایربیس
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-        function checkAuthStatus() {
-            const savedUser = localStorage.getItem('proforosh_user');
-            if (savedUser) {
-                try {
-                    currentUser = JSON.parse(savedUser);
-                    document.getElementById('userBtn').innerText = currentUser.name;
-                } catch (e) {
-                    currentUser = null;
-                }
-            } else {
-                currentUser = null;
-                document.getElementById('userBtn').innerText = "ورود/ثبت نام";
+    let currentUser = JSON.parse(localStorage.getItem('user')) || null;
+    let selectedProduct = null;
+
+    // بارگذاری اولیه
+    window.onload = function() {
+      updateUserUI();
+      loadProducts();
+      preventBackOnSession();
+    };
+
+    function preventBackOnSession() {
+      history.pushState(null, null, location.href);
+      window.onpopstate = function () { history.go(1); };
+    }
+
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    function updateUserUI() {
+      const circle = document.getElementById('userCircle');
+      if (currentUser) {
+        circle.innerText = currentUser.name;
+      } else {
+        circle.innerText = "ورود/ثبت‌نام";
+      }
+    }
+
+    function handleUserCircleClick() {
+      if (currentUser) {
+        document.getElementById('userInfoText').innerText = `نام کاربری: ${currentUser.username}\nرمز عبور: ${currentUser.password}`;
+        openModal('userInfoModal');
+      } else {
+        openModal('authChoiceModal');
+      }
+    }
+
+    // ثبت نام
+    function handleRegister() {
+      const name = document.getElementById('regName').value.trim();
+      const username = document.getElementById('regUser').value.trim();
+      const password = document.getElementById('regPass').value.trim();
+
+      if (name.length === 0 || name.length > 6) return alert("نام باید حداکثر ۶ حرف باشد.");
+      if (username.length < 5) return alert("نام کاربری باید حداقل ۵ حرف باشد.");
+      if (password.length < 5) return alert("رمز عبور باید حداقل ۵ حرف باشد.");
+
+      db.ref('users/' + username).once('value', snapshot => {
+        if (snapshot.exists()) {
+          alert("این نام کاربری از قبل وجود دارد.");
+        } else {
+          const userData = { name, username, password };
+          db.ref('users/' + username).set(userData, err => {
+            if (!err) {
+              currentUser = userData;
+              localStorage.setItem('user', JSON.stringify(userData));
+              updateUserUI();
+              closeModal('registerModal');
+              alert("ثبت نام با موفقیت انجام شد.");
             }
+          });
         }
+      });
+    }
 
-        function handleUserClick() {
-            if (currentUser) {
-                document.getElementById('accUser').innerText = currentUser.username;
-                document.getElementById('accPass').innerText = currentUser.password;
-                openModal('accountModal');
-            } else {
-                openModal('authChoiceModal');
-            }
+    // ورود
+    function handleLogin() {
+      const username = document.getElementById('loginUser').value.trim();
+      const password = document.getElementById('loginPass').value.trim();
+
+      db.ref('users/' + username).once('value', snapshot => {
+        if (snapshot.exists() && snapshot.val().password === password) {
+          currentUser = snapshot.val();
+          localStorage.setItem('user', JSON.stringify(currentUser));
+          updateUserUI();
+          closeModal('loginModal');
+          alert("ورود با موفقیت انجام شد.");
+        } else {
+          alert("نام کاربری یا رمز عبور اشتباه است.");
         }
+      });
+    }
 
-        function showRegisterModal() {
-            closeModal('authChoiceModal');
-            openModal('registerModal');
+    // خروج
+    function handleLogout() {
+      currentUser = null;
+      localStorage.removeItem('user');
+      updateUserUI();
+      closeModal('userInfoModal');
+    }
+
+    // ورود مدیر
+    function handleAdminLogin() {
+      const u = document.getElementById('adminUser').value.trim();
+      const p = document.getElementById('adminPass').value.trim();
+
+      db.ref('admin').once('value', snapshot => {
+        const adminData = snapshot.val() || { username: "admin", password: "admin" };
+        if (u === adminData.username && p === adminData.password) {
+          localStorage.setItem('adminAuth', 'true');
+          window.location.href = 'modiree.html';
+        } else {
+          alert("اطلاعات مدیر اشتباه است.");
         }
+      });
+    }
 
-        function showLoginModal() {
-            closeModal('authChoiceModal');
-            openModal('loginModal');
-        }
+    // نمایش اعلانات
+    function openNotifs() {
+      if (!currentUser) {
+        alert("لطفاً ابتدا ثبت‌نام کنید یا وارد شوید.");
+        openModal('authChoiceModal');
+        return;
+      }
+      const list = document.getElementById('notifList');
+      list.innerHTML = "در حال دریافت...";
+      openModal('notifModal');
 
-        function processRegister() {
-            const name = document.getElementById('regName').value.trim();
-            const user = document.getElementById('regUser').value.trim();
-            const pass = document.getElementById('regPass').value.trim();
+      // دریافت عمومی و شخصی
+      db.ref('notifications').once('value', snapshot => {
+        list.innerHTML = "";
+        snapshot.forEach(child => {
+          const n = child.val();
+          if (n.type === 'public' || (n.type === 'personal' && n.targetUser === currentUser.username)) {
+            const div = document.createElement('div');
+            div.className = 'notif-item';
+            div.innerText = n.text;
+            list.appendChild(div);
+          }
+        });
+        if (!list.innerHTML) list.innerHTML = "اعلانی وجود ندارد.";
+      });
+    }
 
-            if (name.length === 0 || name.length > 6) {
-                alert('نام باید بین ۱ تا ۶ حرف باشد.');
-                return;
-            }
-            if (user.length < 5) {
-                alert('نام کاربری باید حداقل ۵ حرف باشد.');
-                return;
-            }
-            if (pass.length < 5) {
-                alert('رمز عبور باید حداقل ۵ حرف باشد.');
-                return;
-            }
+    // صفحه پشتیبانی
+    function goToSupport() {
+      if (!currentUser) {
+        alert("لطفاً ابتدا ثبت‌نام کنید یا وارد شوید.");
+        openModal('authChoiceModal');
+        return;
+      }
+      window.location.href = 'posht.html';
+    }
 
-            db.ref('users/' + user).once('value').then(snapshot => {
-                if (snapshot.exists()) {
-                    alert('این نام کاربری قبلاً ثبت شده است.');
-                } else {
-                    const userData = { name: name, username: user, password: pass };
-                    db.ref('users/' + user).set(userData).then(() => {
-                        alert('ثبت‌نام با موفقیت انجام شد!');
-                        localStorage.setItem('proforosh_user', JSON.stringify(userData));
-                        checkAuthStatus();
-                        closeModal('registerModal');
-                    }).catch(err => {
-                        alert('خطا در ثبت اطلاعات.');
-                    });
-                }
-            }).catch(err => {
-                alert('خطا در ارتباط با پایگاه داده.');
-            });
-        }
+    function goToSupportWithReceipt() {
+      window.location.href = 'posht.html?ref=receipt';
+    }
 
-        function processLogin() {
-            const user = document.getElementById('loginUser').value.trim();
-            const pass = document.getElementById('loginPass').value.trim();
+    // بارگذاری لیست محصولات
+    function loadProducts() {
+      db.ref('products').on('value', snapshot => {
+        const grid = document.getElementById('productsGrid');
+        grid.innerHTML = "";
+        snapshot.forEach(child => {
+          const p = child.val();
+          p.id = child.key;
+          const card = document.createElement('div');
+          card.className = 'product-card';
+          card.onclick = () => showProductDetails(p);
+          card.innerHTML = `
+            <img src="${p.mainImg}">
+            <div class="product-title">${p.title || 'محصول'}</div>
+            <div class="product-price">${p.price} تومان</div>
+          `;
+          grid.appendChild(card);
+        });
+      });
+    }
 
-            if (!user || !pass) {
-                alert('لطفاً همه فیلدها را پر کنید.');
-                return;
-            }
+    function showProductDetails(p) {
+      selectedProduct = p;
+      document.getElementById('pDetailsTitle').innerText = p.title || 'جزئیات محصول';
+      document.getElementById('pDetailsImg').src = p.mainImg;
+      document.getElementById('pDetailsPrice').innerText = `قیمت: ${p.price} تومان`;
+      document.getElementById('pDetailsDesc').innerText = p.desc || '';
+      
+      const extraContainer = document.getElementById('pDetailsExtraImgs');
+      extraContainer.innerHTML = "";
+      if (p.extraImgs && Array.isArray(p.extraImgs)) {
+        p.extraImgs.forEach(url => {
+          const img = document.createElement('img');
+          img.src = url;
+          extraContainer.appendChild(img);
+        });
+      }
+      openModal('productDetailsModal');
+    }
 
-            db.ref('users/' + user).once('value').then(snapshot => {
-                if (snapshot.exists()) {
-                    const userData = snapshot.val();
-                    if (userData.password === pass) {
-                        alert('ورود با موفقیت انجام شد!');
-                        localStorage.setItem('proforosh_user', JSON.stringify(userData));
-                        checkAuthStatus();
-                        closeModal('loginModal');
-                    } else {
-                        alert('رمز عبور اشتباه است.');
-                    }
-                } else {
-                    alert('نام کاربری یافت نشد.');
-                }
-            }).catch(err => {
-                alert('خطا در ارتباط با پایگاه داده.');
-            });
-        }
-
-        function logout() {
-            localStorage.removeItem('proforosh_user');
-            checkAuthStatus();
-            closeModal('accountModal');
-            alert('از حساب کاربری خارج شدید.');
-        }
-
-        function openAdminModal() {
-            openModal('adminModal');
-        }
-
-        function processAdminLogin() {
-            const user = document.getElementById('adminUser').value.trim();
-            const pass = document.getElementById('adminPass').value.trim();
-
-            db.ref('adminInfo').once('value').then(snapshot => {
-                let adminData = snapshot.val();
-                if (!adminData) {
-                    adminData = { user: 'admin', pass: '1234' };
-                }
-
-                if (user === adminData.user && pass === adminData.pass) {
-                    localStorage.setItem('proforosh_admin_logged', 'true');
-                    window.location.href = 'modiree.html';
-                } else {
-                    alert('نام کاربری یا رمز عبور مدیر اشتباه است.');
-                }
-            }).catch(err => {
-                alert('خطا در بررسی اطلاعات مدیر.');
-            });
-        }
-
-        function loadProducts() {
-            db.ref('products').on('value', snapshot => {
-                const grid = document.getElementById('productGrid');
-                grid.innerHTML = '';
-                const data = snapshot.val();
-
-                if (!data) {
-                    grid.innerHTML = '<p style="grid-column: span 2; text-align: center; color: #777;">هیچ محصولی یافت نشد.</p>';
-                    return;
-                }
-
-                Object.keys(data).forEach(id => {
-                    const p = data[id];
-                    const card = document.createElement('div');
-                    card.className = 'product-card';
-                    card.onclick = () => openProductDetail(p);
-                    card.innerHTML = `
-                        <img src="${p.mainImage}" alt="${p.title}">
-                        <div class="product-info">
-                            <div class="product-title">${p.title || 'محصول'}</div>
-                            <div class="product-price">${p.price} تومان</div>
-                        </div>
-                    `;
-                    grid.appendChild(card);
-                });
-            }, error => {
-                document.getElementById('productGrid').innerHTML = '<p style="grid-column: span 2; text-align: center; color: #e74c3c;">خطا در دریافت محصولات از پایگاه داده.</p>';
-            });
-        }
-
-        function openProductDetail(p) {
-            selectedProduct = p;
-            const content = document.getElementById('productDetailContent');
-            
-            let extraImagesHTML = `<div class="slider-container"><img src="${p.mainImage}"></div>`;
-            if (p.extraImages && p.extraImages.length > 0) {
-                extraImagesHTML = `<div class="slider-container">
-                    <img src="${p.mainImage}">
-                    ${p.extraImages.map(img => `<img src="${img}">`).join('')}
-                </div>`;
-            }
-
-            content.innerHTML = `
-                ${extraImagesHTML}
-                <h3 style="margin-bottom:8px;">${p.title || 'محصول'}</h3>
-                <p style="color:#e74c3c; font-weight:bold; margin-bottom:10px;">قیمت: ${p.price} تومان</p>
-                <p style="font-size:13px; color:#555; margin-bottom:15px; white-space:pre-line;">${p.description || 'توضیحاتی ندارد.'}</p>
-                <button class="btn-block" style="background:#2ecc71;" onclick="openBuyModal()">خرید محصول</button>
-            `;
-            openModal('productDetailModal');
-        }
-
-        function openBuyModal() {
-            closeModal('productDetailModal');
-            const details = document.getElementById('buyDetails');
-            details.innerHTML = `
-                <p style="margin-bottom:8px;"><strong>شماره کارت:</strong> ${selectedProduct.cardNumber || '-'}</p>
-                <p style="margin-bottom:8px;"><strong>نام صاحب کارت:</strong> ${selectedProduct.cardName || '-'}</p>
-                <p style="margin-bottom:8px;"><strong>آیدی روبیکا:</strong> ${selectedProduct.rubikaId || '-'}</p>
-            `;
-            openModal('buyModal');
-        }
-
-        function redirectToSupportWithReceipt() {
-            if (!currentUser) {
-                alert('برای ارسال رسید ابتدا باید ثبت نام کنید یا وارد حساب خود شوید.');
-                closeModal('buyModal');
-                openModal('authChoiceModal');
-                return;
-            }
-            window.location.href = 'posht.html';
-        }
-
-        function openNotifications() {
-            if (!currentUser) {
-                alert('برای مشاهده اعلانات ابتدا باید ثبت نام کنید یا وارد حساب شوید.');
-                openModal('authChoiceModal');
-                return;
-            }
-
-            const notifList = document.getElementById('notifList');
-            notifList.innerHTML = 'در حال دریافت...';
-            openModal('notifModal');
-
-            db.ref('notifications').once('value').then(snapshot => {
-                notifList.innerHTML = '';
-                const data = snapshot.val();
-                let hasNotif = false;
-
-                if (data) {
-                    Object.keys(data).forEach(k => {
-                        const item = data[k];
-                        if (item.type === 'public' || (item.type === 'personal' && item.targetUser === currentUser.username)) {
-                            hasNotif = true;
-                            const div = document.createElement('div');
-                            div.className = `notification-item ${item.type === 'personal' ? 'personal' : ''}`;
-                            div.innerHTML = `
-                                <div><strong>${item.type === 'public' ? '📢 اعلان عمومی' : '🔒 اعلان شخصی'}</strong></div>
-                                <div style="margin-top:4px;">${item.message}</div>
-                                <div class="notification-date">${item.date || ''}</div>
-                            `;
-                            notifList.appendChild(div);
-                        }
-                    });
-                }
-
-                if (!hasNotif) {
-                    notifList.innerHTML = '<p style="text-align:center; color:#777;">هیچ اعلانی یافت نشد.</p>';
-                }
-            });
-        }
-
-        function goToSupport() {
-            if (!currentUser) {
-                alert('برای ارسال پیام به مدیر ابتدا ثبت نام کنید یا وارد شوید.');
-                openModal('authChoiceModal');
-                return;
-            }
-            window.location.href = 'posht.html';
-        }
-
-        function openModal(id) {
-            const el = document.getElementById(id);
-            if(el) el.classList.add('active');
-        }
-        function closeModal(id) {
-            const el = document.getElementById(id);
-            if(el) el.classList.remove('active');
-        }
-    </script>
+    function openBuyModal() {
+      if (!selectedProduct) return;
+      closeModal('productDetailsModal');
+      document.getElementById('buyCardNum').innerText = selectedProduct.cardNum || '-';
+      document.getElementById('buyCardName').innerText = selectedProduct.cardName || '-';
+      document.getElementById('buyRubika').innerText = selectedProduct.rubika || '-';
+      openModal('buyModal');
+    }
+  </script>
 </body>
 </html>
+ 
